@@ -11,7 +11,7 @@
 //REG_PORT_OUTTGL0 = PORT_PA17;  // toggle state
 //REG_PORT_OUTTLGL1 = PORT_PB08; // use for port-B, as in PB08 
 */
-//#include <Arduino.h>          // library for M0 BLE
+#include <Arduino.h>          // library for M0 BLE
 #include "Adafruit_BLE.h"     // library for Adafruit BLE
 #include "Adafruit_BluefruitLE_SPI.h"     // Adafruit BLE
 #include "Adafruit_BluefruitLE_UART.h"    // Adafruit BLE
@@ -125,28 +125,36 @@ void setup(){
 
   // Initialize interruptPIN
   pinMode(interruptPin, INPUT_PULLUP);
-//  attachInterrupt(digitalPinToInterrupt(interruptPin), SST_ISR, FALLING);
+
+  // Initialize red LED pin 13 on Feather M0
+  pinMode(redLED, OUTPUT);
+
 }
 /******************************************************************************/
 /******************************************************************************/
 void loop(){
     attachInterrupt(digitalPinToInterrupt(interruptPin), SST_ISR, FALLING);
  if (SSTstate) {     
-    delay(200);         // Do nothing if SSTstate change High to Low not detected
     digitalWrite(redLED,HIGH);
+    delay(200);         // Do nothing if SSTstate change High to Low not detected
+
+    // Restart SD card file write on every SST state change
+    dataFile.print(F("\n"));
+    dataFile.close();   // Close SD file after writing complete
+    initializeSD();    // re-initialize and open new file for writing
   }
   else {
    digitalWrite(redLED,LOW);
    spec_counter++;      // Increment spectra counter
    readSpec();          // Read spectrometer output
- //  dynInteg();          // Sets dynamic integration
+   dynInteg();          // Sets dynamic integration
    readRTClock();       // Read real-time clock (PST)
    readVBatt();         // Read battery voltage out
    readTemp();          // Read analog TMP36 temp sensor out
 
     //    if (spec_counter%10 == 0) {
-    printDataSerial();       // Print to serial
-    //printDataSD();           // Print to SD card
+    //printDataSerial();       // Print to serial
+    printDataSD();           // Print to SD card
 
 ///////////////////////////////////
         //writeBinaryDataSerial(); // Write binary data to serial
@@ -159,20 +167,9 @@ void loop(){
 ///////////////////////////////////
     if (spec_counter%500 == 0) {
     readDark(dark_count);
+    //printDataSerial();   // Print to serial
+    printDataSD();       // Print dark to SD card
     }
-///////////////////////////////////
-//       printTimings();// debugging only; print time deltas to serial
-///////////////////////////////////
-  /*  while (ble.isConnected()) {  // Start only after BLE connection
-    spec_counter++;
-    readSpec();              // Read spectrometer output
-    printDataSerial();       // Print to serial
-    //  if (spec_counter%20 == 0) {
-        printDataBLE();          // Print to BLE via UART
-        //avgdata[SPEC_CHANNELS] = {0};
-    //  }
-    }
-  */
 ///////////////////////////////////
    readKeyboard();          // Read keyboard inputs
   }
@@ -222,7 +219,6 @@ void readDark(int dark_count){
       readVBatt();         // Read battery voltage out
       readTemp();          // Read Analog Dev TMP36 temp sensor out
       printDataSerial();   // Print to serial
-      //printDataSD();       // Print to SD card
       }    
 }
 
@@ -649,9 +645,9 @@ void initializeSD() {
   SD.begin(chipSelect);
   // Generate filename;  increment name by 1 (00 to 999)
   for (uint8_t i = 0; i < 1000; i++) {
-   filename[1] = i/100 + '0'; // division by 100
-   filename[2] = (i/10)%10 + '0';  // division by 10 and remainder
-   filename[3] = i%10 + '0';  // modulo second digit
+    filename[1] = i/100 + '0'; // division by 100
+    filename[2] = (i/10)%10 + '0';  // division by 10 and remainder
+    filename[3] = i%10 + '0';  // modulo second digit
      if (!SD.exists(filename)) {
       // Open a new file only if it doesn't exist;  no overwrites
       break;  // leave the loop
@@ -703,9 +699,9 @@ void initializeBLE(){
   if ( FACTORYRESET_ENABLE )
   {
     // Perform a BLE factory reset to known state
-    // Serial.println(F("Performing a factory reset: "));
+     Serial.println(F("Performing a factory reset: "));
     if ( ! ble.factoryReset() ){
-    // error(F("Couldn't factory reset"));
+     Serial.println(F("Couldn't factory reset"));
     }
   }
   ble.echo(false);    // Disable command echo from Bluefruit
