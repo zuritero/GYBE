@@ -11,7 +11,7 @@ int[] data_stored;     // stored spectra for recovery if 'c' '[' or ']' entered
 int draw_sum=0;        // flag for sum accumulation
 int draw_diff=0;       // flag for difference plotting
 double[] summed;       // accumulator container
-int ignore_count=7;    // ignore n leading fields prior to spectrometer channel counts
+int ignore_count=8;    // ignore n leading fields prior to spectrometer channel counts
                        // for plotting
 int time_old=1;        // timestamp of prior sample in data[1], initialized to 1 (avoids undefined division)
 int time_delta;        // difference between current and prior samples in data[1]
@@ -150,7 +150,7 @@ void plotdata()
         // Display measured integration time in msec = micros() / 1000)
         // the nf() formats the float output leading zeros and decimal precision
       text("Int. time",210,505);
-      text((nf((float)data_all[2]/1000,1,2)) + "msec", 280, 505);  
+      text((nf((float)data_all[3]/1000,1,2)) + "msec", 280, 505);  
          textSize(12);
       text(intmult + " x int time mult", 210, 520);  // Display integration time multiplier    
         fill(0, 102, 153);   // blue font
@@ -160,26 +160,31 @@ void plotdata()
       text(nf((float)samplerate,1,1) + "Hz", 120, 505);// sample rate
         textSize(12);
       text(time_delta + "msec period", 40, 520);  // sample period
+        // Display the spectrum counter above wavelength label
+      text("spec# ",500,500);
+      text(data_all[0], 535, 500);// Spectrum counter label
+        textSize(12);
+      
       if (LSR_flag == 1)  // Laser ON Warning
       {
           stroke(255, 255, 0);
           fill(255, 255, 0, 85);  // Yellow box with 85% transparency
-        rect(365, 470, 115, 45);  // Plot rectangle around Warning
+        rect(370, 470, 115, 45);  // Plot rectangle around Warning
           stroke(0, 102, 153);
           fill(255, 0, 0);
         textSize(16);
-        text("LASER ON !", 370, 490); // Laser ON Warning
+        text("LASER ON !", 375, 490); // Laser ON Warning
         textSize(12);
       }
       if (LED_flag == 1)  // White LED ON Warning
       {
           stroke(255, 255, 0);
           fill(255, 255, 0, 85);
-        rect(365, 470, 115, 45);  // Plot rectangle around Warning
+        rect(370, 470, 115, 45);  // Plot rectangle around Warning
           stroke(0, 102, 153);
           fill(255, 0, 0);
         textSize(16);
-        text("White LED ON", 370, 510); // White LED ON Warning
+        text("White LED ON", 375, 510); // White LED ON Warning
         textSize(12);
       }
 }
@@ -198,9 +203,9 @@ void draw()
         if (data_all.length == (int)(288 + ignore_count))  
         {
         // Calculate time difference between current and previous millis() counter
-        // in data_all[1] and store sample rate (in seconds) to print
-        time_delta = data_all[1] - time_old;
-        time_old = data_all[1];
+        // in data_all[2] and store sample rate (in seconds) to print
+        time_delta = data_all[2] - time_old;
+        time_old = data_all[2];
         samplerate = 1000 / (float)(time_delta); 
           
         // Print data to file via serial port output.print
