@@ -134,16 +134,16 @@ void setup(){
 /******************************************************************************/
 void loop(){
     attachInterrupt(digitalPinToInterrupt(interruptPin), SST_ISR, FALLING);
- if (SSTstate) {     
-    digitalWrite(redLED,HIGH);
-    delay(200);         // Do nothing if SSTstate change High to Low not detected
-
-    // Restart SD card file write on every SST state change
-    dataFile.print(F("\n"));
-    dataFile.close();   // Close SD file after writing complete
-    initializeSD();    // re-initialize and open new file for writing
-  }
-  else {
+// if (SSTstate) {     
+//    digitalWrite(redLED,HIGH);
+//    delay(200);         // Do nothing if SSTstate change High to Low not detected
+//
+//    // Restart SD card file write on every SST state change
+//    dataFile.print(F("\n"));
+//    dataFile.close();   // Close SD file after writing complete
+//    initializeSD();    // re-initialize and open new file for writing
+//  }
+//  else {
    digitalWrite(redLED,LOW);
    spec_counter++;      // Increment spectra counter
    readSpec();          // Read spectrometer output
@@ -153,7 +153,7 @@ void loop(){
    readTemp();          // Read analog TMP36 temp sensor out
 
     //    if (spec_counter%10 == 0) {
-    //printDataSerial();       // Print to serial
+    printDataSerial();       // Print to serial
     printDataSD();           // Print to SD card
 
 ///////////////////////////////////
@@ -172,7 +172,7 @@ void loop(){
     }
 ///////////////////////////////////
    readKeyboard();          // Read keyboard inputs
-  }
+//  }
 }
 /******************************************************************************/
 /******************************************************************************/
