@@ -1,15 +1,16 @@
 HSLR Code
+v1.6.1VIIRS
 Readme_v1_6.txt
 - HW_CONFIG:  Arduino Feather ARM Cortex M0 (SAMD21) BLE or Adalogger
 w or wo/ PURE breakout board (for the 5V PS, LEDs) and either RTC option
-RTC_PCF8523 and RTC_DS3231
+RTC_PCF8523 and RTC_DS3231. Start/Stop button supported
 
 //**************************************************************************************//
 TO DO:
 x- directly address PORT i/o registers
 x- dynamic integration-time setting
 x(partial)- dark current measurement (analog) => subtract dark signal in post-processing
-x- Add start-stop switch
+x- Add start-stop switch, Start acquisition by default 
 x- add RTC (two versions included -- settle on one and retire the other?)
 x- add 3.3 to 5V step-up DC (boost) DC converter and add level-shifting circuitry
 x- (proto) add external BLUE Laser and WHITE LED

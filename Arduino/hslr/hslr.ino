@@ -1,4 +1,4 @@
-/* v1.6VIIIRS GYBE,LLC HSLR code to run Hamamatsu C12880MA with Feather M0 (+BLE) datalogger
+/* v1.6.1VIIIRS GYBE,LLC HSLR code to run Hamamatsu C12880MA with Feather M0 (+BLE) datalogger
  * 
  * Initial implmentation based on PURE engineering Arduino Uno example
   https://github.com/groupgets/c12880ma/blob/master/arduino_c12880ma_example/arduino_c12880ma_example.ino
@@ -67,7 +67,7 @@ const int ovr_samples = 20;    // Number of ADC samples that get 'averaged'; min
 const int greenLED = 8;        // Green LED pin number to indicate SD writing
 const int redLED = 13;         // Red LED pin number to indicate sensor running
 const byte interruptPin = 12;  // Interrupt pin for Start-Stop Toggle
-volatile boolean SSTstate = 1; // Initial SST state
+volatile boolean SSTstate = 0; // Initial SST state, set to 0 to enable data acquisition upon bootup
 uint16_t dark_count = 10;      // Number of dark spectra to capture
 uint16_t ii;                   // Dark spectra counter
 uint16_t data[SPEC_CHANNELS];  // Video-out bucket
@@ -142,7 +142,7 @@ void setup(){
 void loop(){
   Serial.println("@ loop function");   //OZ
     attachInterrupt(digitalPinToInterrupt(interruptPin), SST_ISR, FALLING);
- if (!SSTstate) {  // OZ: negating to avoid entering, SSTstate is set True when defined     
+ if (SSTstate) {
     digitalWrite(redLED,HIGH);
     delay(200);         // Do nothing if SSTstate change High to Low not detected
 
