@@ -74,9 +74,10 @@ const int redLED = 13;         // Red LED pin number to indicate sensor running
 
 void setup(){ 
   Serial.begin(115200); // Initialize serial; baud rate to 115200
-  for (int i=1; i < 10; i++){
-    Serial.println("@ setup function");
-    delay(100);
+  for (int i=1; i < 50; i++){
+    Serial.print("@ setup function: ");
+    Serial.println(i);
+    delay(1000);
   }
   Serial.println("Finished initial Serial loop");  // OZ
   Serial.println();
