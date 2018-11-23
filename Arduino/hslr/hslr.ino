@@ -67,29 +67,6 @@ const int ovr_samples = 20;    // Number of ADC samples that get 'averaged'; min
 const int greenLED = 8;        // Green LED pin number to indicate SD writing
 const int redLED = 13;         // Red LED pin number to indicate sensor running
 const byte interruptPin = 12;  // Interrupt pin for Start-Stop Toggle
-
-//void setup(){ 
-//  Serial.begin(115200); // Initialize serial; baud rate to 115200
-//  for (int i=1; i < 50; i++){
-//    Serial.print("@ setup function: ");
-//    Serial.println(i);
-//    delay(1000);
-//  }
-//  Serial.println("Finished initial Serial loop");  // OZ
-//  Serial.println();
-//  initializeBLE();
-////  initializeSD();
-//  initializeRTC();
-//  initialize_c12880ma();
-//
-//  // Initialize interruptPIN
-//  pinMode(interruptPin, INPUT_PULLUP);
-//
-//  // Initialize red LED pin 13 on Feather M0
-//  pinMode(redLED, OUTPUT);
-//
-//}
-
 volatile boolean SSTstate = 1; // Initial SST state
 uint16_t dark_count = 10;      // Number of dark spectra to capture
 uint16_t ii;                   // Dark spectra counter
@@ -118,7 +95,6 @@ float measuredtemp = 0;     // measured temp = 3.3V * analogRead(TEMP_IN) / 2^12
 uint32_t filtsum; // vars for leaky integrator filter
 int shift=2;      // increase shift for more integration samples in filter                                    
 */
-
 
 File dataFile;                // Declare global File 'dataFile'
                               // to write to SD card
@@ -150,7 +126,7 @@ void setup(){
   Serial.println("@ setup function");  // OZ
   Serial.println();
   initializeBLE();
-//  initializeSD();
+  initializeSD();
   initializeRTC();
   initialize_c12880ma();
 
@@ -166,16 +142,16 @@ void setup(){
 void loop(){
   Serial.println("@ loop function");   //OZ
     attachInterrupt(digitalPinToInterrupt(interruptPin), SST_ISR, FALLING);
-// if (SSTstate) {     
-//    digitalWrite(redLED,HIGH);
-//    delay(200);         // Do nothing if SSTstate change High to Low not detected
-//
-//    // Restart SD card file write on every SST state change
-//    dataFile.print(F("\n"));
-//    dataFile.close();   // Close SD file after writing complete
-//    initializeSD();    // re-initialize and open new file for writing
-//  }
-//  else {
+ if (!SSTstate) {  // OZ: negating to avoid entering, SSTstate is set True when defined     
+    digitalWrite(redLED,HIGH);
+    delay(200);         // Do nothing if SSTstate change High to Low not detected
+
+    // Restart SD card file write on every SST state change
+    dataFile.print(F("\n"));
+    dataFile.close();   // Close SD file after writing complete
+    initializeSD();    // re-initialize and open new file for writing
+  }
+  else {
    digitalWrite(redLED,LOW);
    spec_counter++;      // Increment spectra counter
    readSpec();          // Read spectrometer output
@@ -186,7 +162,7 @@ void loop(){
 
     //    if (spec_counter%10 == 0) {
     printDataSerial();       // Print to serial
-//    printDataSD();           // Print to SD card
+    printDataSD();           // Print to SD card
 
 ///////////////////////////////////
         //writeBinaryDataSerial(); // Write binary data to serial
@@ -204,7 +180,7 @@ void loop(){
     }
 ///////////////////////////////////
    readKeyboard();          // Read keyboard inputs
-//  }
+  }
 }
 /******************************************************************************/
 /******************************************************************************/
