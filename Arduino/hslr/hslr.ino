@@ -38,8 +38,6 @@
 //#define PCF8523RTC    // standard RTC (+/- 1~2secs / day)    
 #define PCF8523RTC   // precision RTC (+/- 0.2secs / day)
 
-
-// OZ
 #ifdef PCF8523RTC   // RTC choice PCF8523
   RTC_PCF8523 rtc;  // rtc object for rtc.now in Adalogger PCF8523 FeatherWing
   const int chipSelect = 10;   // Use this pin for Adalogger PCF8523 Featherwing
@@ -48,22 +46,19 @@
   RTC_DS3231 rtc;   // rtc object for rtc.now in DS3231 RTC FeatherWing
   const int chipSelect = 4;      // SD pin setting on Feather M0 datalogger
 #endif
-// OZ end
 
 //---Adafruit BLE defines--------------------------------------------------------------------*/
 #define FACTORYRESET_ENABLE         1
 #define MINIMUM_FIRMWARE_VERSION    "0.6.6"
 #define MODE_LED_BEHAVIOUR          "MODE"
-// Create the bluefruit object
 
-// OZ changes
-//Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
-//// A small BLE helper
-//void error(const __FlashStringHelper*err) {
-//  Serial.println(err);
-//  while (1);
-//}
-// OZ end changes
+// Create the bluefruit object
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+// A small BLE helper
+void error(const __FlashStringHelper*err) {
+  Serial.println(err);
+  while (1);
+}
 
 //-----------------------------------------------------------------------
 // Vars and constants declaration
@@ -71,30 +66,30 @@ const uint32_t ADCbits= pow(2,12);// Number of ADC bits for dynamic int. setting
 const int ovr_samples = 20;    // Number of ADC samples that get 'averaged'; min =1
 const int greenLED = 8;        // Green LED pin number to indicate SD writing
 const int redLED = 13;         // Red LED pin number to indicate sensor running
-
-void setup(){ 
-  Serial.begin(115200); // Initialize serial; baud rate to 115200
-  for (int i=1; i < 50; i++){
-    Serial.print("@ setup function: ");
-    Serial.println(i);
-    delay(1000);
-  }
-  Serial.println("Finished initial Serial loop");  // OZ
-  Serial.println();
-  //initializeBLE();
-//  initializeSD();
-  initializeRTC();
-  initialize_c12880ma();
-
-  // Initialize interruptPIN
-//  pinMode(interruptPin, INPUT_PULLUP);
-
-  // Initialize red LED pin 13 on Feather M0
-  pinMode(redLED, OUTPUT);
-
-}
-
 const byte interruptPin = 12;  // Interrupt pin for Start-Stop Toggle
+
+//void setup(){ 
+//  Serial.begin(115200); // Initialize serial; baud rate to 115200
+//  for (int i=1; i < 50; i++){
+//    Serial.print("@ setup function: ");
+//    Serial.println(i);
+//    delay(1000);
+//  }
+//  Serial.println("Finished initial Serial loop");  // OZ
+//  Serial.println();
+//  initializeBLE();
+////  initializeSD();
+//  initializeRTC();
+//  initialize_c12880ma();
+//
+//  // Initialize interruptPIN
+//  pinMode(interruptPin, INPUT_PULLUP);
+//
+//  // Initialize red LED pin 13 on Feather M0
+//  pinMode(redLED, OUTPUT);
+//
+//}
+
 volatile boolean SSTstate = 1; // Initial SST state
 uint16_t dark_count = 10;      // Number of dark spectra to capture
 uint16_t ii;                   // Dark spectra counter
@@ -136,36 +131,36 @@ char datetime_buf[16];        // Datetime buffer size big enough to store yyyymm
   int inline analogReadFast(byte ADCpin, byte prescalerBits=4) // inline library functions must be in header
   { 
   ADC->CTRLA.bit.ENABLE = 0;                     // Disable ADC
-//    while( ADC->STATUS.bit.SYNCBUSY == 1 );        // Wait for synchronization
-//    ADC->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV64 |   // Divide Clock by 64
-//                     ADC_CTRLB_RESSEL_12BIT;     // ivan's guess to take it to 12bit
-//                     //ADC_CTRLB_RESSEL_10BIT;   // this was original
-//    ADC->AVGCTRL.reg = ADC_AVGCTRL_SAMPLENUM_1 |   // 1 sample 
-//                      ADC_AVGCTRL_ADJRES(0x00ul);  // Adjusting result by 0
-//    ADC->SAMPCTRL.reg = 0x00;                      // Sampling Time Length = 0
-//    ADC->CTRLA.bit.ENABLE = 1;                     // Enable ADC
-//  while( ADC->STATUS.bit.SYNCBUSY == 1 );          // Wait for synchronization
+    while( ADC->STATUS.bit.SYNCBUSY == 1 );        // Wait for synchronization
+    ADC->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV64 |   // Divide Clock by 64
+                     ADC_CTRLB_RESSEL_12BIT;     // ivan's guess to take it to 12bit
+                     //ADC_CTRLB_RESSEL_10BIT;   // this was original
+    ADC->AVGCTRL.reg = ADC_AVGCTRL_SAMPLENUM_1 |   // 1 sample 
+                      ADC_AVGCTRL_ADJRES(0x00ul);  // Adjusting result by 0
+    ADC->SAMPCTRL.reg = 0x00;                      // Sampling Time Length = 0
+    ADC->CTRLA.bit.ENABLE = 1;                     // Enable ADC
+  while( ADC->STATUS.bit.SYNCBUSY == 1 );          // Wait for synchronization
   return analogRead(ADCpin);
   }
 
 /******************************************************************************/
 /******************************************************************************/
-//void setup(){ 
-//  Serial.begin(115200); // Initialize serial; baud rate to 115200
-//  Serial.println("@ setup function");  // OZ
-//  Serial.println();
-//  //initializeBLE();
-////  initializeSD();
-//  initializeRTC();
-//  initialize_c12880ma();
-//
-//  // Initialize interruptPIN
-//  pinMode(interruptPin, INPUT_PULLUP);
-//
-//  // Initialize red LED pin 13 on Feather M0
-//  pinMode(redLED, OUTPUT);
-//
-//}
+void setup(){ 
+  Serial.begin(115200); // Initialize serial; baud rate to 115200
+  Serial.println("@ setup function");  // OZ
+  Serial.println();
+  initializeBLE();
+//  initializeSD();
+  initializeRTC();
+  initialize_c12880ma();
+
+  // Initialize interruptPIN
+  pinMode(interruptPin, INPUT_PULLUP);
+
+  // Initialize red LED pin 13 on Feather M0
+  pinMode(redLED, OUTPUT);
+
+}
 /******************************************************************************/
 /******************************************************************************/
 void loop(){
@@ -524,19 +519,19 @@ void printDataSD() {
 }
 /******************************************************************************/
 /******************************************************************************/
-//void printDataBLE() {
-//    // Log data to BLE via UART
-//    // Loop over all channels to store spectra to BLE via UART   
-//    for (int i = 0; i < SPEC_CHANNELS; i++){
-//        ble.print(F(","));
-//      ble.print(data[i]);
-//    }
-////    ble.println();
-//    ble.print(F("\n"));  // separate spectra by newline
-//    ble.print(F("***")); // special character
-//    ble.print(F("\n"));  // separate spectra by newline
-//    Serial.println();    // throw anotehr newline to serial out as well
-//}
+void printDataBLE() {
+    // Log data to BLE via UART
+    // Loop over all channels to store spectra to BLE via UART   
+    for (int i = 0; i < SPEC_CHANNELS; i++){
+        ble.print(F(","));
+      ble.print(data[i]);
+    }
+//    ble.println();
+    ble.print(F("\n"));  // separate spectra by newline
+    ble.print(F("***")); // special character
+    ble.print(F("\n"));  // separate spectra by newline
+    Serial.println();    // throw anotehr newline to serial out as well
+}
 
 /******************************************************************************/
 /******************************************************************************/
@@ -696,7 +691,7 @@ void initializeSD() {
 /* Initialize RTC modeule
 //-----------------------------*/ 
 void initializeRTC(){
-if (! rtc.begin()) {
+if (! rtc.begin()) {    //OZ this function always return true after Wire.begin() is excecuted, may not be useful
     Serial.println("Couldn't find RTC");
     while (1);
   }
@@ -704,7 +699,7 @@ if (! rtc.begin()) {
   if (!rtc.initialized()) {
     Serial.println("RTC is NOT running!");
         // following line sets the RTC to the date & time this sketch was compiled
-    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  Serial.println("RTC reset: setting time to host datetime!");
+     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  Serial.println("RTC reset: setting time to host datetime!");
         // This line sets the RTC with an explicit date & time, for example to set
         // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
@@ -724,36 +719,36 @@ if (! rtc.begin()) {
 /******************************************************************************/
 /******************************************************************************/
 /* Initialize BLE modeule, set LED pattern and switch to 'DATA' mode
-//-----------------------------*/ 
-//// Initialize the BLE module
-//void initializeBLE(){
-//  if ( !ble.begin(VERBOSE_MODE) )
-//  {
-//  // error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
-//  }
-//  // Serial.println( F("OK!") );
-//
-//  if ( FACTORYRESET_ENABLE )
-//  {
-//    // Perform a BLE factory reset to known state
-//     Serial.println(F("Performing a factory reset: "));
-//    if ( ! ble.factoryReset() ){
-//     Serial.println(F("Couldn't factory reset"));
-//    }
-//  }
-//  ble.echo(false);    // Disable command echo from Bluefruit
-//  ble.verbose(false); // debug info is a little annoying after this point!
-//  // Wait for start only after connection
-//  //  while (!ble.isConnected()) {
-//  //    delay(500);
-//  //  }
-//
-//  // Change Mode LED Activity
-//  // LED Activity command is only supported from 0.6.6
-//  if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) ) {
-//    ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
-//  }
-//  // Switch module to DATA mode
-//  ble.setMode(BLUEFRUIT_MODE_DATA);
-//}
+-----------------------------*/ 
+// Initialize the BLE module
+void initializeBLE(){
+  if ( !ble.begin(VERBOSE_MODE) )
+  {
+  // error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+  }
+  // Serial.println( F("OK!") );
+
+  if ( FACTORYRESET_ENABLE )
+  {
+    // Perform a BLE factory reset to known state
+     Serial.println(F("Performing a factory reset: "));
+    if ( ! ble.factoryReset() ){
+     Serial.println(F("Couldn't factory reset"));
+    }
+  }
+  ble.echo(false);    // Disable command echo from Bluefruit
+  ble.verbose(false); // debug info is a little annoying after this point!
+  // Wait for start only after connection
+  //  while (!ble.isConnected()) {
+  //    delay(500);
+  //  }
+
+  // Change Mode LED Activity
+  // LED Activity command is only supported from 0.6.6
+  if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) ) {
+    ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
+  }
+  // Switch module to DATA mode
+  ble.setMode(BLUEFRUIT_MODE_DATA);
+}
 
