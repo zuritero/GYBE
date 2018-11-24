@@ -163,7 +163,7 @@ void loop() {
     readTemp();          // Read analog TMP36 temp sensor out
 
     //    if (spec_counter%10 == 0) {
-    printDataSerial();       // Print to serial
+//    printDataSerial();       // Print to serial
     printDataSD();           // Print to SD card
 
     ///////////////////////////////////
@@ -356,12 +356,13 @@ void dynInteg() {
 /******************************************************************************/
 /******************************************************************************/
 void readRTClock() {
+//  Read RTC clock, and compute milliseconds since start of current clock.sec
   DateTime rt_now = rtc.now();
   uint32_t cmillis = millis();  // Get current millisecond count
 
   // Set new millis reference if counter has rollover
   if (cmillis < millis_ref) {
-    millis_count = SetMillisRef(cmillis);
+    millis_count = (uint16_t) SetMillisRef(cmillis);
   }
   else {
     //  Compute milliseconds since start of current clock.sec
@@ -381,16 +382,18 @@ void readRTClock() {
 /******************************************************************************/
 /******************************************************************************/
 void readSystemClock() {
+//  Read System clock, and compute milliseconds since start of current clock.sec
   datetime = now();   // Record current time in epoch format
   uint32_t cmillis = millis();  // Get current millisecond count
 
+// Compute milliseconds since last turn of the clock.sec
   // Set new millis reference if counter has rolledover
   if (cmillis < millis_ref) {
-    millis_count = SetMillisRef(cmillis);
+    millis_count = (uint16_t) SetMillisRef(cmillis);
   }
   else {
     //  Compute milliseconds since start of current clock.sec
-    millis_count = (uint16_t)((cmillis - millis_ref) % 1000);  // range is 0 - 999
+    millis_count = (uint16_t) ((cmillis - millis_ref) % 1000);  // range is 0 - 999
   }
 
   sprintf(datetime_buf, "%04u%02u%02u%02u%02u%02u",
@@ -407,8 +410,8 @@ uint16_t SetMillisRef(uint32_t millisin) {
   // OZ - record in the logs when new millisecond reference is computed
   //  Function to update ref, used only when millis() rolls over (~ 50 days)
 
-  // Shift current reference closest to max value, and compute gap between shift and Max value
-  // Max value: 32 bit = 4,294,967,295
+  // Shift current reference closest to max value, then compute gap between shift and Max value
+  // Max value: 32 bit = 4,294,967,295; Gap < 1000 units
   uint8_t  msGap2MaxValue =  (4294967295 - millis_ref) % 1000;  // ms gap to reach max value
   //  New reference, compute position of new ref located between 0 - 999 ms
   uint32_t NewMillisRef = 999 - msGap2MaxValue;
@@ -424,7 +427,7 @@ uint16_t SetMillisRef(uint32_t millisin) {
 
   // Update the global millisecond reference
   millis_ref = NewMillisRef;
-  return (uint16_t) postmillis;
+  return postmillis;
 }
 /******************************************************************************/
 /******************************************************************************/
@@ -467,8 +470,8 @@ void printDataSerial() {
   // Log data to serial port
   Serial.print(spec_counter); // print spectrum counter
   Serial.print(F(","));     // the F ensures that the string not loaded to RAM
-  Serial.print(datetime_buf); // print RTC readout
-  Serial.print(F(","));     //
+//  Serial.print(datetime_buf); // print RTC readout
+//  Serial.print(F(","));     //
   Serial.print(datetime);     // Print RTC readout epoch
   Serial.print(F(","));
   Serial.print(millis_count); // print millis() data
