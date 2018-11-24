@@ -1,9 +1,9 @@
 HSLR Code
-v1.6.1VIIRS
+v1.6.2VIIRS
 Readme_v1_6.txt
 - HW_CONFIG:  Arduino Feather ARM Cortex M0 (SAMD21) BLE or Adalogger
 w or wo/ PURE breakout board (for the 5V PS, LEDs) and either RTC option
-RTC_PCF8523 and RTC_DS3231. Start/Stop button supported
+RTC_PCF8523 and RTC_DS3231. Start/Stop button supported (optional)
 
 //**************************************************************************************//
 TO DO:
@@ -34,6 +34,7 @@ DEMO improvements (visualization and wireless):
 
 //**************************************************************************************//
 // hslr_v1_6:
+- OZ: Added capability to compute milliseconds since the current clock.sec start; function included to adjust millisecond ref when value wraps around (~50 days).
 - Added pin-mode assignment for LASER_404 and WHITE_LED pins using register manipulation
 (updated v1_7 also)
 - Added dynamic integration function dynInteg() which drives output of 12bit data 
