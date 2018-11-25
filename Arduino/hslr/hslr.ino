@@ -36,8 +36,8 @@
 
 //---Adafruit RTC & chipselect defines--------------------------------------------------------------------*/
 // Define RTC version (comment out version that's N/A)
-//#define PCF8523RTC    // standard RTC (+/- 1~2secs / day)
-#define PCF8523RTC   // precision RTC (+/- 0.2secs / day)
+#define PCF8523RTC    // standard RTC (+/- 1~2secs / day)
+//#define DS3231RTC   // precision RTC (+/- 0.2secs / day)
 
 #ifdef PCF8523RTC   // RTC choice PCF8523
 RTC_PCF8523 rtc;  // rtc object for rtc.now in Adalogger PCF8523 FeatherWing
@@ -93,6 +93,7 @@ float max_int_time = 2;     // Max integration time for dynamic integ. adjustmen
 float measuredvbat = 0;     // measured bat voltage = 2 * 3.3V * analogRead(VBATPIN) / 2^12
 float measuredtemp = 0;     // measured temp = 3.3V * analogRead(TEMP_IN) / 2^12
 
+uint8_t debugFlag = 0;      // OZ - used for raising flag when error encountered
 /*
   uint32_t filtsum; // vars for leaky integrator filter
   int shift=2;      // increase shift for more integration samples in filter
@@ -177,13 +178,16 @@ void loop() {
     ///////////////////////////////////
     if (spec_counter % 500 == 0) {
       readDark(dark_count);
-      //printDataSerial();   // Print to serial
+      printDataSerial();   // Print to serial
       printDataSD();       // Print dark to SD card
+      Serial.print("Got dark current, filename used: ");
+      Serial.println(filename);
     }
     ///////////////////////////////////
     readKeyboard();          // Read keyboard inputs
   }
 }
+
 /******************************************************************************/
 /******************************************************************************/
 void SST_ISR() {         // Interupt Service Request for Start-Stop Toggle
@@ -203,6 +207,7 @@ void pulse_clock(int cycles) {
     delayMicroseconds(delaymicros);
   }
 }
+
 /******************************************************************************/
 /******************************************************************************/
 void pulse_clock_timed(int duration_micros) {
@@ -225,15 +230,17 @@ void readDark(int dark_count) {
     ii++;
     spec_counter++;      // Increment spectra counter
     readDarkSpec();      // Read Dark measurement
-    readRTClock();       // Read real-time clock (PST)
+//    readRTClock();       // Read real-time clock (PST)
+    readSystemClock();   // Read system clock
     readVBatt();         // Read battery voltage out
     readTemp();          // Read Analog Dev TMP36 temp sensor out
-    printDataSerial();   // Print to serial
+//    printDataSerial();   // Print to serial
   }
 }
 
 /******************************************************************************/
 /******************************************************************************/
+
 void readSpec() {
   //compute integration time
   duration_micros = (float) (int_time * 1e6);
@@ -299,10 +306,11 @@ void readSpec() {
 }
 /******************************************************************************/
 /******************************************************************************/
+
 void readDarkSpec() {
   // Hardcode integration time to minimum
   duration_micros = 0;
-  //  Hardcode zero for integration time output to ID dark current measurement
+  //  Hardco  de zero for integration time output to ID dark current measurement
   timings[3] = 0;
 
   // Start clock cycle but keep start pulse ST low for dark measurement
@@ -335,9 +343,9 @@ void readDarkSpec() {
     pulse_clock(1);
   }
 }
+/******************************************************************************/
+/******************************************************************************/
 
-/******************************************************************************/
-/******************************************************************************/
 void dynInteg() {
   //Dynamic int_time calc. for next readSpec
   // IF saturated (ADCbits - 10), scale int time by 1/8
@@ -355,6 +363,7 @@ void dynInteg() {
 }
 /******************************************************************************/
 /******************************************************************************/
+
 void readRTClock() {
 //  Read RTC clock, and compute milliseconds since start of current clock.sec
   DateTime rt_now = rtc.now();
@@ -381,6 +390,7 @@ void readRTClock() {
 }
 /******************************************************************************/
 /******************************************************************************/
+
 void readSystemClock() {
 //  Read System clock, and compute milliseconds since start of current clock.sec
   datetime = now();   // Record current time in epoch format
@@ -406,6 +416,7 @@ void readSystemClock() {
 }
 /******************************************************************************/
 /******************************************************************************/
+
 uint16_t SetMillisRef(uint32_t millisin) {
   // OZ - record in the logs when new millisecond reference is computed
   //  Function to update ref, used only when millis() rolls over (~ 50 days)
@@ -431,6 +442,7 @@ uint16_t SetMillisRef(uint32_t millisin) {
 }
 /******************************************************************************/
 /******************************************************************************/
+
 void readVBatt() {
   // Read LiPoly Battery Voltage if connected to Feather M0
   //  delay(10);
@@ -442,6 +454,8 @@ void readVBatt() {
   measuredvbat *= 3.3;        // Multiply by 3.3V, our reference voltage
 }
 /******************************************************************************/
+/******************************************************************************/
+
 void readTemp() {
   // Read Temperature from Analog Devices TMP36 (-40 to 150C range)
   analogReadFast(TEMP_IN);
@@ -456,6 +470,8 @@ void readTemp() {
   //10 mv per degree wit 500 mV offset
   // t = (voltage - 500mV) x 100
 }
+
+/******************************************************************************/
 /******************************************************************************/
 // Leaky integrator filter - chosen because of low compuation overhead
 // see http://www.bot-thoughts.com/2013/07/oversampling-decimation-filtering.html for more info on the leaky integrator filter
@@ -466,13 +482,14 @@ void readTemp() {
 */
 /******************************************************************************/
 /******************************************************************************/
+
 void printDataSerial() {
   // Log data to serial port
   Serial.print(spec_counter); // print spectrum counter
   Serial.print(F(","));     // the F ensures that the string not loaded to RAM
 //  Serial.print(datetime_buf); // print RTC readout
 //  Serial.print(F(","));     //
-  Serial.print(datetime);     // Print RTC readout epoch
+  Serial.print(datetime);     // Print datetime in epoch format
   Serial.print(F(","));
   Serial.print(millis_count); // print millis() data
   Serial.print(F(","));     //
@@ -514,10 +531,12 @@ void printDataSerial() {
 /******************************************************************************/
 void printDataSD() {
   // Log data to SD card dataFile
+//  Serial.println("Function: printDataSD");    // OZ debug
+  // Configure Power Pin
   // Open SD file for writing
+  digitalWrite(greenLED, HIGH);    // turn green LED ON to signal write    
   dataFile = SD.open(filename, FILE_WRITE);
   if (dataFile) {
-    digitalWrite(greenLED, HIGH);    // turn green LED ON to signal write
     dataFile.print(spec_counter); // print spectrum counter
     dataFile.print(F(","));
     dataFile.print(datetime_buf);   // print RTC readout, YYYYMMDDhhmmss
@@ -550,7 +569,7 @@ void printDataSD() {
     dataFile.print(digitalRead(LASER_404));  // print LSR state
     dataFile.print(F(","));
     dataFile.print(digitalRead(WHITE_LED));  // print LED state
-    digitalWrite(greenLED, LOW);     // green LED off after SD write
+//    digitalWrite(greenLED, LOW);     // green LED off after SD write
     // Loop over all channels to store spectra to SD card
     for (int i = 0; i < SPEC_CHANNELS; i++) {
       dataFile.print(F(","));
@@ -558,11 +577,70 @@ void printDataSD() {
     }
     dataFile.print(F("\n"));
   }
+  
+  digitalWrite(greenLED, LOW);     // green LED off after SD write
+  // Close SD file after writing complete
+  dataFile.close();
+
+}
+/*  *****************************************************************************/
+/******************************************************************************/
+
+void writeBinaryDataSD(){
+ // Log data in binary format to SD card dataFile
+  // Open SD file for writing
+  dataFile = SD.open(filename, FILE_WRITE);
+  if (dataFile) {
+    digitalWrite(greenLED, HIGH);    // turn green LED ON to signal write
+    dataFile.write((uint8_t*) &spec_counter, sizeof(spec_counter)); // spectrum counter
+//    dataFile.print(F(","));
+    dataFile.write((uint8_t*) &datetime, sizeof(datetime));   // date/time, epoch format
+//    dataFile.print(F(","));
+    dataFile.write((uint8_t*) &millis_count, sizeof(millis_count));   // ms resolution for date/time
+//    dataFile.print(F(","));
+    dataFile.write((uint8_t*) timings[3], sizeof(timings[3]));     // print integration time data, microseconds
+//    dataFile.print(F(","));
+    dataFile.write((uint8_t*) &measuredvbat, sizeof(measuredvbat));   // Measured voltage of connected LiPoly bat, V
+//    dataFile.print(F(","));
+    dataFile.write((uint8_t*) &measuredtemp, sizeof(measuredtemp));   // Measured temperature TMP36 sensor, celsius
+//    dataFile.print(F(","));
+    /*      dataFile.print(0.000000);       // placeholder Measured (gpsLAT) GPS LAT
+            dataFile.print(F(","));
+          dataFile.print(0.000000);       // placeholder Measured (gpsLON) GPS LON
+            dataFile.print(F(","));
+          dataFile.print(0.00);           // place-holder Measured depth, meters
+            dataFile.print(F(","));
+          dataFile.print(0.00);           // place-holder IMU1 (roll)
+            dataFile.print(F(","));
+          dataFile.print(0.00);           // place-holder IMU2 (pitch)
+            dataFile.print(F(","));
+          dataFile.print(0.00);           // place-holder IMU3 (yaw)
+            dataFile.print(F(","));
+          dataFile.print(0.00);           // place-holder IMU4 (heading)
+            dataFile.print(F(","));
+          dataFile.print(0.00);           // place-holder IM5 (altitude)
+            dataFile.print(F(","));
+    */
+    uint8_t tmpval = digitalRead(LASER_404);
+    dataFile.write((uint8_t*) &tmpval, sizeof(tmpval));  // print LSR state
+//    dataFile.print(F(","));
+    tmpval = digitalRead(WHITE_LED);
+    dataFile.write((uint8_t*) &tmpval, sizeof(tmpval));  // print LED state
+//    // Loop over all channels to store spectra to SD card
+//    for (int i = 0; i < SPEC_CHANNELS; i++) {
+//      dataFile.print(F(","));
+//      dataFile.print(data[i]);
+//    }
+    dataFile.write((uint8_t*) data, sizeof(data));   //write entire array
+    dataFile.print(F("\n"));
+  }
+  digitalWrite(greenLED, LOW);     // green LED off after SD write
   // Close SD file after writing complete
   dataFile.close();
 }
 /******************************************************************************/
 /******************************************************************************/
+
 void printDataBLE() {
   // Log data to BLE via UART
   // Loop over all channels to store spectra to BLE via UART
@@ -654,24 +732,35 @@ void readKeyboard() {
   if (Serial.available() > 0) {
     // read the incoming byte:
     incomingByte = Serial.read();
-    if (incomingByte == 93) {
+    if (incomingByte == ']') {
       int_time = min(int_time * 2, 1048576);
     } // Integration time multiply by 2x
-    if (incomingByte == 91) {
+    if (incomingByte == '[') {
       int_time = max(int_time / 2, 0);
     } // Integration Time divide by 2x
-    if (incomingByte == 76) {
+    if (incomingByte == 'L') {
       digitalWrite(LASER_404, !digitalRead(LASER_404));
     }  // Toggle laser ON-OFF state
-    if (incomingByte == 87) {
+    if (incomingByte == 'W') {
       digitalWrite(WHITE_LED, !digitalRead(WHITE_LED));
     }  // Togle white LED ON-OFF state
-    if (incomingByte == 120) {
+    if (incomingByte == 'x') {
       digitalWrite(LASER_404, LOW);
       digitalWrite(WHITE_LED, LOW);
       dataFile.close();
     }  // Shut down both Laser and LED upon exiting
     // and close SD card file
+    if (incomingByte == 'f') {
+      Serial.println("Printing file names in SD card:");
+      File root;    // Hold file names
+      root = SD.open("/");
+      printDirectory(root, 0);  // Print all files to serial
+      root.close();
+    }  // Output to serial names of files on SD card
+    if (incomingByte == 'E') {
+      Serial.print("Value of debug flag= :");
+      Serial.println(debugFlag);
+    }  // Indicate when error occurrs, since serial monitor is slow at beginning
   }
 }
 
@@ -717,18 +806,31 @@ void initializeSD() {
 
   // Create, open and name the SD card file
   // Note that only one file can be open at a time.
-  pinMode(chipSelect, OUTPUT);
+//  pinMode(chipSelect, OUTPUT);
+//  digitalWrite(chipSelect, OUTPUT);   //
   SD.begin(chipSelect);
-  // Generate filename;  increment name by 1 (00 to 999)
-  for (uint8_t i = 0; i < 1000; i++) {
-    filename[1] = i / 100 + '0'; // division by 100
-    filename[2] = (i / 10) % 10 + '0'; // division by 10 and remainder
-    filename[3] = i % 10 + '0'; // modulo second digit
-    if (!SD.exists(filename)) {
-      // Open a new file only if it doesn't exist;  no overwrites
-      break;  // leave the loop
-    }
+  // OZ - check if SD initialization works 
+  if (!SD.begin(chipSelect)){
+    debugFlag = 1;    // raise flag for error
   }
+  
+  // Generate filename;  increment name by 1 (00 to 999)
+//  for (uint8_t i = 0; i < 1000; i++) {
+//    filename[1] = i / 100 + '0'; // division by 100
+//    filename[2] = (i / 10) % 10 + '0'; // division by 10 and remainder
+//    filename[3] = i % 10 + '0'; // modulo second digit
+    filename[0] = 'T';
+    filename[1] = 'e';
+    filename[2] = 's';
+    filename[3] = 't';
+    Serial.print("New File Name: ");
+    Serial.println(filename);
+//    if (!SD.exists(filename)) {
+//      // Open a new file only if it doesn't exist;  no overwrites
+//      break;  // leave the loop
+//    }
+//  }
+  digitalWrite(greenLED, LOW);     // green LED off after SD write  
 }
 /******************************************************************************/
 /******************************************************************************/
@@ -804,5 +906,32 @@ void initializeBLE() {
   }
   // Switch module to DATA mode
   ble.setMode(BLUEFRUIT_MODE_DATA);
+}
+
+/************************************************************/
+/************************************************************/
+void printDirectory(File dir, int numTabs) {
+//  Serial.println("Function: printDirectory");
+  while (true) {
+
+    File entry =  dir.openNextFile();
+    if (! entry) {
+      // no more files
+      break;
+    }
+    for (uint8_t i = 0; i < numTabs; i++) {
+      Serial.print('\t');
+    }
+    Serial.print(entry.name());
+    if (entry.isDirectory()) {
+      Serial.println("/");
+      printDirectory(entry, numTabs + 1);
+    } else {
+      // files have sizes, directories do not
+      Serial.print("\t\t");
+      Serial.println(entry.size(), DEC);
+    }
+    entry.close();
+  }
 }
 

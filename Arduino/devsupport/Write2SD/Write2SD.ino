@@ -13,8 +13,8 @@ void setup() {
   // Initialize serial port, and inform
   Serial.begin(115200);
   Serial.println("Initializing card");
-  //CS pin is an output
-  digitalWrite(CS_PIN, OUTPUT);
+  //CS pin is an output, from board to SD feather
+//  digitalWrite(CS_PIN, OUTPUT);   // It works w/ this commented
 
   //Card will draw power from pin 8, set it high
   pinMode(POW_PIN, OUTPUT);
@@ -38,7 +38,7 @@ void loop() {
   String dataString = "Hello World";
   
   //Open a file on SD, and write to it
-  File dataFile = SD.open("log.csv", FILE_WRITE);
+  File dataFile = SD.open("log21.csv", FILE_WRITE);
 
   // write to file if created successfully
   if (dataFile)
@@ -57,5 +57,5 @@ void loop() {
   {
     Serial.println("Unable to open file on SD");
   }
-  delay(5000);
+  delay(1000);
 }
